@@ -3,28 +3,28 @@ package com.jhonatan_dev.dataloaderfordynamo.repository.impl;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.model.BatchWriteItemRequest;
 import com.amazonaws.services.dynamodbv2.model.BatchWriteItemResult;
-import com.jhonatan_dev.dataloaderfordynamo.repository.DynamoDbRepository;
+import com.jhonatan_dev.dataloaderfordynamo.repository.AsyncDynamoDbRepository;
 import com.jhonatan_dev.dataloaderfordynamo.util.DynamoUtil;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Repository;
 
 @Log4j2
 @Repository
-public class DynamoDbRepositoryImpl implements DynamoDbRepository {
+public class AsyncDynamoDbRepositoryImpl implements AsyncDynamoDbRepository {
 
   @Autowired private AmazonDynamoDB amazonDynamoDB;
 
+  @Async("taskExecutor")
   @Override
-  public void loadData(String tableName, List<Map<String, Map<String, Object>>> items)
-      throws Exception {
-    log.info("Start -> dynamoDbRepository.loadData");
-
-    log.info("tableName: " + tableName);
-
-    log.info("items size: " + items.size());
+  public CompletableFuture<BatchWriteItemResult> loadData(
+      String tableName, List<Map<String, Map<String, Object>>> items) throws Exception {
+    log.info(
+        "Start -> asyncDynamoDbRepository.loadData, thread {}", Thread.currentThread().getName());
 
     BatchWriteItemRequest batchWriteItemRequest =
         DynamoUtil.getBatchWriteItemResult(tableName, items);
@@ -32,8 +32,8 @@ public class DynamoDbRepositoryImpl implements DynamoDbRepository {
     BatchWriteItemResult batchWriteItemResult =
         amazonDynamoDB.batchWriteItem(batchWriteItemRequest);
 
-    log.info("batchWriteItemResult: " + batchWriteItemResult);
-
-    log.info("End -> dynamoDbRepository.loadData");
+    log.info(
+        "End -> asyncDynamoDbRepository.loadData, thread {}", Thread.currentThread().getName());
+    return CompletableFuture.completedFuture(batchWriteItemResult);
   }
 }
