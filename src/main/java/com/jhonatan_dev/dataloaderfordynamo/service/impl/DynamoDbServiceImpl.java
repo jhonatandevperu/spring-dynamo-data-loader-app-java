@@ -87,7 +87,7 @@ public class DynamoDbServiceImpl implements DynamoDbService {
         "CompletableFutures not done: {}",
         futures.stream().filter(future -> !future.isDone()).count());
     log.info(
-        "Futures with error: {}",
+        "CompletableFutures with error: {}",
         futures.stream().filter(CompletableFuture::isCompletedExceptionally).count());
   }
 
