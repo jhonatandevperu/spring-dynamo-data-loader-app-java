@@ -17,7 +17,12 @@ import org.springframework.stereotype.Repository;
 @Repository
 public class AsyncDynamoDbRepositoryImpl implements AsyncDynamoDbRepository {
 
-  @Autowired private AmazonDynamoDB amazonDynamoDB;
+  private final AmazonDynamoDB amazonDynamoDB;
+
+  @Autowired
+  public AsyncDynamoDbRepositoryImpl(AmazonDynamoDB amazonDynamoDB) {
+    this.amazonDynamoDB = amazonDynamoDB;
+  }
 
   @Async("taskExecutor")
   @Override

@@ -3,6 +3,7 @@ package com.jhonatan_dev.dataloaderfordynamo.repository.impl;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.model.BatchWriteItemRequest;
 import com.amazonaws.services.dynamodbv2.model.BatchWriteItemResult;
+import com.amazonaws.services.dynamodbv2.model.DescribeTableResult;
 import com.jhonatan_dev.dataloaderfordynamo.repository.DynamoDbRepository;
 import com.jhonatan_dev.dataloaderfordynamo.util.DynamoUtil;
 import java.util.List;
@@ -15,7 +16,12 @@ import org.springframework.stereotype.Repository;
 @Repository
 public class DynamoDbRepositoryImpl implements DynamoDbRepository {
 
-  @Autowired private AmazonDynamoDB amazonDynamoDB;
+  private final AmazonDynamoDB amazonDynamoDB;
+
+  @Autowired
+  public DynamoDbRepositoryImpl(AmazonDynamoDB amazonDynamoDB) {
+    this.amazonDynamoDB = amazonDynamoDB;
+  }
 
   @Override
   public void loadData(String tableName, List<Map<String, Map<String, Object>>> items)
@@ -35,5 +41,23 @@ public class DynamoDbRepositoryImpl implements DynamoDbRepository {
     log.info("batchWriteItemResult: " + batchWriteItemResult);
 
     log.info("End -> dynamoDbRepository.loadData");
+  }
+
+  @Override
+  public boolean isTableExists(String tableName) {
+    log.info("Start -> dynamoDbRepository.isTableExists");
+
+    boolean existsTable = false;
+
+    try {
+      DescribeTableResult describeTableResult = amazonDynamoDB.describeTable(tableName);
+
+      existsTable = describeTableResult.getTable().getTableName().equals(tableName);
+    } catch (Exception ex) {
+      log.error("dynamoDbRepository.isTableExists, error: {}", ex.getMessage());
+    }
+
+    log.info("End -> dynamoDbRepository.isTableExists");
+    return existsTable;
   }
 }

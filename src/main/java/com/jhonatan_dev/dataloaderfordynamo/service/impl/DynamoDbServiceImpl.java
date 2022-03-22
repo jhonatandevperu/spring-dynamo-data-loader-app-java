@@ -32,18 +32,13 @@ public class DynamoDbServiceImpl implements DynamoDbService {
   }
 
   @Override
-  public void loadData(RequestBatchLoadDto body) throws Exception {
-    log.info("Start -> dynamoDbService.loadData");
-
-    dynamoDbRepository.loadData(body.getTableName(), body.getContent().getItems());
-
-    log.info("End -> dynamoDbService.loadData");
-  }
-
-  @Override
   public void asyncLoadData(RequestBatchLoadDto body) throws Exception {
 
     String tableName = body.getTableName();
+
+    if (!dynamoDbRepository.isTableExists(tableName)) {
+      throw new Exception(String.format("Table %s doesn't exists.", body.getTableName()));
+    }
 
     List<Map<String, Map<String, Object>>> items = body.getContent().getItems();
 
@@ -68,11 +63,7 @@ public class DynamoDbServiceImpl implements DynamoDbService {
       if (DynamoUtil.MAX_THREADS_BATCH == calls) {
         log.info("Waiting DynamoDB {} threads calls...", DynamoUtil.MAX_THREADS_BATCH);
 
-        CompletableFuture.allOf(
-                futures.stream()
-                    .filter(future -> !future.isDone())
-                    .toArray(CompletableFuture[]::new))
-            .join();
+        waitingForCompletableFuturesPendingExecution(futures);
 
         calls = 0;
 
@@ -86,11 +77,32 @@ public class DynamoDbServiceImpl implements DynamoDbService {
 
       calls++;
     }
-    log.info("Futures size: {}", futures.size());
-    log.info("Futures done: {}", futures.stream().filter(CompletableFuture::isDone).count());
-    log.info("Futures not done: {}", futures.stream().filter(future -> !future.isDone()).count());
+
+    waitingForCompletableFuturesPendingExecution(futures);
+
+    log.info("CompletableFutures size: {}", futures.size());
+    log.info(
+        "CompletableFutures done: {}", futures.stream().filter(CompletableFuture::isDone).count());
+    log.info(
+        "CompletableFutures not done: {}",
+        futures.stream().filter(future -> !future.isDone()).count());
     log.info(
         "Futures with error: {}",
         futures.stream().filter(CompletableFuture::isCompletedExceptionally).count());
   }
+
+  private void waitingForCompletableFuturesPendingExecution(
+      List<CompletableFuture<BatchWriteItemResult>> futures) {
+    List<CompletableFuture<BatchWriteItemResult>> futuresNotExecuted =
+        futures.stream()
+            .filter(
+                future ->
+                    !future.isDone() && !future.isCompletedExceptionally() && !future.isCancelled())
+            .collect(Collectors.toList());
+
+    if (!futuresNotExecuted.isEmpty()) {
+      CompletableFuture.allOf(futuresNotExecuted.toArray(CompletableFuture[]::new)).join();
+    }
+  }
+
 }
