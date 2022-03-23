@@ -94,7 +94,7 @@ public class DynamoDbServiceImpl implements DynamoDbService {
   }
 
   private void waitingForCompletableFuturesPendingExecution(
-      List<CompletableFuture<BatchWriteItemResult>> futures) {
+      List<CompletableFuture<BatchWriteItemResult>> futures) throws Exception {
     List<CompletableFuture<BatchWriteItemResult>> futuresNotExecuted =
         futures.stream()
             .filter(
@@ -105,6 +105,8 @@ public class DynamoDbServiceImpl implements DynamoDbService {
     if (!futuresNotExecuted.isEmpty()) {
       CompletableFuture.allOf(futuresNotExecuted.toArray(CompletableFuture[]::new)).join();
     }
+
+    Thread.sleep(500);
   }
 
 }
