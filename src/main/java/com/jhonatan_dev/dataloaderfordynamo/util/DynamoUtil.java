@@ -12,9 +12,7 @@ import lombok.experimental.UtilityClass;
 @UtilityClass
 public class DynamoUtil {
 
-  public static int MAX_ITEMS_BATCH_WRITE = 25;
-
-  public static int MAX_THREADS_BATCH = 25;
+  public static final int MAX_ITEMS_BATCH_WRITE = 25;
 
   public static BatchWriteItemRequest getBatchWriteItemResult(
       String tableName, List<Map<String, Map<String, Object>>> items) {
@@ -27,10 +25,7 @@ public class DynamoUtil {
 
   public static List<WriteRequest> getWriteRequests(List<Map<String, Map<String, Object>>> items) {
 
-    List<WriteRequest> writeRequests =
-        items.stream().map(DynamoUtil::getWriteRequest).collect(Collectors.toList());
-
-    return writeRequests;
+    return items.stream().map(DynamoUtil::getWriteRequest).collect(Collectors.toList());
   }
 
   public static WriteRequest getWriteRequest(Map<String, Map<String, Object>> item) {
@@ -45,39 +40,28 @@ public class DynamoUtil {
   public static PutItemRequest getPutItemRequest(
       String tableName, Map<String, Map<String, Object>> item) {
 
-    PutItemRequest putItemRequest = new PutItemRequest(tableName, getPutItem(item));
-
-    return putItemRequest;
+    return new PutItemRequest(tableName, getPutItem(item));
   }
 
   public static Map<String, AttributeValue> getPutItem(Map<String, Map<String, Object>> item) {
 
     Map<String, AttributeValue> putItem = new HashMap<>();
 
-    item.entrySet().stream()
-        .forEach(
-            attribute -> {
-              String attributeName = attribute.getKey();
+    item.forEach((attributeName, value1) -> {
 
-              AtomicReference<AttributeValue> attributeValue =
-                  new AtomicReference<>(new AttributeValue());
+        AtomicReference<AttributeValue> attributeValue =
+                new AtomicReference<>(new AttributeValue());
 
-              attribute.getValue().entrySet().stream()
-                  .forEach(
-                      attributeType -> {
-                        attributeValue.set(ItemUtils.toAttributeValue(attributeType.getValue()));
-                      });
+        value1.forEach((key, value) -> attributeValue.set(ItemUtils.toAttributeValue(value)));
 
-              putItem.put(attributeName, attributeValue.get());
-            });
+        putItem.put(attributeName, attributeValue.get());
+    });
 
     return putItem;
   }
 
   public static int getOperationTimes(int itemsSize, int itemsSplitSize) {
 
-    int operationTimes = (int) Math.ceil(itemsSize / (float) itemsSplitSize);
-
-    return operationTimes;
+    return (int) Math.ceil(itemsSize / (float) itemsSplitSize);
   }
 }

@@ -25,7 +25,12 @@ import org.springframework.context.annotation.Configuration;
 @EnableConfigurationProperties(value = {AwsProperties.class})
 public class AwsConfig {
 
-  @Autowired private AwsProperties awsProperties;
+  private final AwsProperties awsProperties;
+
+  @Autowired
+  public AwsConfig(AwsProperties awsProperties){
+    this.awsProperties = awsProperties;
+  }
 
   @Bean("amazonDynamoDB")
   protected AmazonDynamoDB amazonDynamoDB() {
@@ -85,15 +90,13 @@ public class AwsConfig {
               .withRegion(Regions.fromName(awsProperties.getDynamodb().getRegion()))
               .build();
 
-      STSAssumeRoleSessionCredentialsProvider stsProvider =
+      return
           new STSAssumeRoleSessionCredentialsProvider.Builder(
                   awsProperties.getRole().getRoleArn(), randomSesionName)
               .withExternalId(awsProperties.getRole().getExternalId())
               .withStsClient(stsClient)
               .withRoleSessionDurationSeconds(awsProperties.getRole().getTimeSession())
               .build();
-
-      return stsProvider;
     }
 
     return DefaultAWSCredentialsProviderChain.getInstance();

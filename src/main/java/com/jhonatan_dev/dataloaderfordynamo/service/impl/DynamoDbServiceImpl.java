@@ -58,16 +58,18 @@ public class DynamoDbServiceImpl implements DynamoDbService {
 
     int calls = 0;
 
+    int maxThreadsPerBatch = 10;
+
     for (List<Map<String, Map<String, Object>>> itemsContainer : itemsContainers) {
 
-      if (DynamoUtil.MAX_THREADS_BATCH == calls) {
-        log.info("Waiting DynamoDB {} threads calls...", DynamoUtil.MAX_THREADS_BATCH);
+      if (maxThreadsPerBatch == calls) {
+        log.info("Waiting DynamoDB {} threads calls...", maxThreadsPerBatch);
 
         waitingForCompletableFuturesPendingExecution(futures);
 
         calls = 0;
 
-        log.info("DynamoDB {} threads calls, done!", DynamoUtil.MAX_THREADS_BATCH);
+        log.info("DynamoDB {} threads calls, done!", maxThreadsPerBatch);
       }
 
       CompletableFuture<BatchWriteItemResult> future =

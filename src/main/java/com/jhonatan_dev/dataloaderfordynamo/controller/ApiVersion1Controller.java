@@ -15,7 +15,12 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/v1")
 public class ApiVersion1Controller {
 
-  @Autowired private DynamoDbService dynamoDbService;
+  private final DynamoDbService dynamoDbService;
+
+  @Autowired
+  public ApiVersion1Controller(DynamoDbService dynamoDbService){
+    this.dynamoDbService = dynamoDbService;
+  }
 
   @PostMapping(
       value = "/batchload",
