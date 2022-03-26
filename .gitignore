@@ -29,5 +29,6 @@ hs_err_pid*
 /.settings/
 *.factorypath
 mvnw*
+.idea/*
 *.iml
 HELP.md
