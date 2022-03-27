@@ -44,8 +44,9 @@ public class DynamoDbRepositoryImpl implements DynamoDbRepository {
           "batchWriteItemResult.unprocessedItems: {}", batchWriteItemResult.getUnprocessedItems());
 
     } catch (Exception ex) {
+      log.error("dynamoDbRepository.loadData error: {}", ex.getMessage());
 
-      log.error(ex.getStackTrace());
+      ex.printStackTrace();
 
       throw new InternalServerErrorException(ex.getMessage());
     }
@@ -64,7 +65,9 @@ public class DynamoDbRepositoryImpl implements DynamoDbRepository {
 
       existsTable = describeTableResult.getTable().getTableName().equals(tableName);
     } catch (Exception ex) {
-      log.error(ex.getStackTrace());
+      log.error("dynamoDbRepository.isTableExists error: {}", ex.getMessage());
+
+      ex.printStackTrace();
     }
 
     log.info("End -> dynamoDbRepository.isTableExists");

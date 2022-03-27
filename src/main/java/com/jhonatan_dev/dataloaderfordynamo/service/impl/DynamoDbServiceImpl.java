@@ -117,7 +117,11 @@ public class DynamoDbServiceImpl implements DynamoDbService {
     } catch (InterruptedException ex) {
       Thread.currentThread().interrupt();
 
-      log.error(ex.getStackTrace());
+      log.error(
+          "dynamoDbService.waitingForCompletableFuturesPendingExecution, error: {}",
+          ex.getMessage());
+
+      ex.printStackTrace();
 
       throw new InternalServerErrorException(ex.getMessage());
     }

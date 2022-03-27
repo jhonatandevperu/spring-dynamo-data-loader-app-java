@@ -41,12 +41,12 @@ public class AsyncDynamoDbRepositoryImpl implements AsyncDynamoDbRepository {
           amazonDynamoDB.batchWriteItem(batchWriteItemRequest);
 
       log.info(
-          "thread {}, batchWriteItemResult.unprocessedItems size : {}",
+          "asyncDynamoDbRepository.loadData, thread {}, batchWriteItemResult.unprocessedItems size : {}",
           Thread.currentThread().getName(),
           batchWriteItemResult.getUnprocessedItems().size());
 
       log.info(
-          "thread {}, batchWriteItemResult.unprocessedItems: {}",
+          "asyncDynamoDbRepository.loadData, thread {}, batchWriteItemResult.unprocessedItems: {}",
           Thread.currentThread().getName(),
           batchWriteItemResult.getUnprocessedItems());
 
@@ -54,9 +54,12 @@ public class AsyncDynamoDbRepositoryImpl implements AsyncDynamoDbRepository {
           "End -> asyncDynamoDbRepository.loadData, thread {}", Thread.currentThread().getName());
       return CompletableFuture.completedFuture(batchWriteItemResult);
     } catch (Exception ex) {
-      log.info("thread {} error:", Thread.currentThread().getName());
+      log.error(
+          "asyncDynamoDbRepository.loadData, thread {} error: {}",
+          Thread.currentThread().getName(),
+          ex.getMessage());
 
-      log.error(ex.getStackTrace());
+      ex.printStackTrace();
 
       return CompletableFuture.failedFuture(new InternalServerErrorException(ex.getMessage()));
     }

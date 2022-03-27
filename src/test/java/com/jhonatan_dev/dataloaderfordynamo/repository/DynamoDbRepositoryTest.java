@@ -1,11 +1,13 @@
 package com.jhonatan_dev.dataloaderfordynamo.repository;
 
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
-import com.amazonaws.services.dynamodbv2.model.DescribeTableResult;
-import com.amazonaws.services.dynamodbv2.model.TableDescription;
+import com.amazonaws.services.dynamodbv2.model.*;
+import com.jhonatan_dev.dataloaderfordynamo.exceptions.InternalServerErrorException;
 import com.jhonatan_dev.dataloaderfordynamo.repository.impl.DynamoDbRepositoryImpl;
+import com.jhonatan_dev.dataloaderfordynamo.util.DynamoUtil;
+import java.util.*;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
@@ -19,6 +21,59 @@ class DynamoDbRepositoryTest {
   @Mock private AmazonDynamoDB amazonDynamoDB;
 
   @InjectMocks private DynamoDbRepositoryImpl dynamoDbRepository;
+
+  @Test
+  void testLoadData() throws InternalServerErrorException {
+    String tableName = "myTable";
+
+    Map<String, Object> itemValue = new HashMap<>();
+    itemValue.put("S", "partitionKeyValue");
+
+    Map<String, Map<String, Object>> item = new HashMap<>();
+    item.put("partitionKey", itemValue);
+
+    List<Map<String, Map<String, Object>>> items = new ArrayList<>(List.of(item));
+
+    BatchWriteItemRequest batchWriteItemRequest =
+        DynamoUtil.getBatchWriteItemResult(tableName, items);
+
+    BatchWriteItemResult batchWriteItemResult = new BatchWriteItemResult();
+    batchWriteItemResult.setUnprocessedItems(new HashMap<>());
+
+    when(amazonDynamoDB.batchWriteItem(batchWriteItemRequest)).thenReturn(batchWriteItemResult);
+
+    dynamoDbRepository.loadData(tableName, items);
+  }
+
+  @Test
+  void testLoadData_Exception() {
+    String tableName = "myTable";
+
+    Map<String, Object> itemValue = new HashMap<>();
+    itemValue.put("S", "partitionKeyValue");
+
+    Map<String, Map<String, Object>> item = new HashMap<>();
+    item.put("partitionKey", itemValue);
+
+    List<Map<String, Map<String, Object>>> items = new ArrayList<>(List.of(item));
+
+    BatchWriteItemRequest batchWriteItemRequest =
+        DynamoUtil.getBatchWriteItemResult(tableName, items);
+
+    BatchWriteItemResult batchWriteItemResult = new BatchWriteItemResult();
+    batchWriteItemResult.setUnprocessedItems(new HashMap<>());
+
+    when(amazonDynamoDB.batchWriteItem(batchWriteItemRequest))
+        .thenThrow(
+            new ProvisionedThroughputExceededException(
+                "You exceeded your maximum allowed provisioned throughput for a table"));
+
+    Assertions.assertThrows(
+        InternalServerErrorException.class,
+        () -> {
+          dynamoDbRepository.loadData(tableName, items);
+        });
+  }
 
   @Test
   void testIsTableExists() {
