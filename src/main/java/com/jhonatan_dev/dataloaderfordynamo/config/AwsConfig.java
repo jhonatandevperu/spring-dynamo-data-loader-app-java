@@ -28,7 +28,7 @@ public class AwsConfig {
   private final AwsProperties awsProperties;
 
   @Autowired
-  public AwsConfig(AwsProperties awsProperties){
+  public AwsConfig(AwsProperties awsProperties) {
     this.awsProperties = awsProperties;
   }
 
@@ -90,13 +90,12 @@ public class AwsConfig {
               .withRegion(Regions.fromName(awsProperties.getDynamodb().getRegion()))
               .build();
 
-      return
-          new STSAssumeRoleSessionCredentialsProvider.Builder(
-                  awsProperties.getRole().getRoleArn(), randomSesionName)
-              .withExternalId(awsProperties.getRole().getExternalId())
-              .withStsClient(stsClient)
-              .withRoleSessionDurationSeconds(awsProperties.getRole().getTimeSession())
-              .build();
+      return new STSAssumeRoleSessionCredentialsProvider.Builder(
+              awsProperties.getRole().getRoleArn(), randomSesionName)
+          .withExternalId(awsProperties.getRole().getExternalId())
+          .withStsClient(stsClient)
+          .withRoleSessionDurationSeconds(awsProperties.getRole().getTimeSession())
+          .build();
     }
 
     return DefaultAWSCredentialsProviderChain.getInstance();

@@ -3,6 +3,7 @@ package com.jhonatan_dev.dataloaderfordynamo.repository.impl;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.model.BatchWriteItemRequest;
 import com.amazonaws.services.dynamodbv2.model.BatchWriteItemResult;
+import com.jhonatan_dev.dataloaderfordynamo.exceptions.InternalServerErrorException;
 import com.jhonatan_dev.dataloaderfordynamo.repository.AsyncDynamoDbRepository;
 import com.jhonatan_dev.dataloaderfordynamo.util.DynamoUtil;
 import java.util.List;
@@ -27,18 +28,37 @@ public class AsyncDynamoDbRepositoryImpl implements AsyncDynamoDbRepository {
   @Async("taskExecutor")
   @Override
   public CompletableFuture<BatchWriteItemResult> loadData(
-      String tableName, List<Map<String, Map<String, Object>>> items) throws Exception {
+      String tableName, List<Map<String, Map<String, Object>>> items) {
     log.info(
         "Start -> asyncDynamoDbRepository.loadData, thread {}", Thread.currentThread().getName());
 
-    BatchWriteItemRequest batchWriteItemRequest =
-        DynamoUtil.getBatchWriteItemResult(tableName, items);
+    try {
 
-    BatchWriteItemResult batchWriteItemResult =
-        amazonDynamoDB.batchWriteItem(batchWriteItemRequest);
+      BatchWriteItemRequest batchWriteItemRequest =
+          DynamoUtil.getBatchWriteItemResult(tableName, items);
 
-    log.info(
-        "End -> asyncDynamoDbRepository.loadData, thread {}", Thread.currentThread().getName());
-    return CompletableFuture.completedFuture(batchWriteItemResult);
+      BatchWriteItemResult batchWriteItemResult =
+          amazonDynamoDB.batchWriteItem(batchWriteItemRequest);
+
+      log.info(
+          "thread {}, batchWriteItemResult.unprocessedItems size : {}",
+          Thread.currentThread().getName(),
+          batchWriteItemResult.getUnprocessedItems().size());
+
+      log.info(
+          "thread {}, batchWriteItemResult.unprocessedItems: {}",
+          Thread.currentThread().getName(),
+          batchWriteItemResult.getUnprocessedItems());
+
+      log.info(
+          "End -> asyncDynamoDbRepository.loadData, thread {}", Thread.currentThread().getName());
+      return CompletableFuture.completedFuture(batchWriteItemResult);
+    } catch (Exception ex) {
+      log.info("thread {} error:", Thread.currentThread().getName());
+
+      log.error(ex.getStackTrace());
+
+      return CompletableFuture.failedFuture(new InternalServerErrorException(ex.getMessage()));
+    }
   }
 }

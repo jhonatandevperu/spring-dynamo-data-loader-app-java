@@ -2,6 +2,8 @@ package com.jhonatan_dev.dataloaderfordynamo.service.impl;
 
 import com.amazonaws.services.dynamodbv2.model.BatchWriteItemResult;
 import com.jhonatan_dev.dataloaderfordynamo.dto.RequestBatchLoadDto;
+import com.jhonatan_dev.dataloaderfordynamo.exceptions.InternalServerErrorException;
+import com.jhonatan_dev.dataloaderfordynamo.exceptions.NotFoundException;
 import com.jhonatan_dev.dataloaderfordynamo.repository.AsyncDynamoDbRepository;
 import com.jhonatan_dev.dataloaderfordynamo.repository.DynamoDbRepository;
 import com.jhonatan_dev.dataloaderfordynamo.service.DynamoDbService;
@@ -32,12 +34,13 @@ public class DynamoDbServiceImpl implements DynamoDbService {
   }
 
   @Override
-  public void asyncLoadData(RequestBatchLoadDto body) throws Exception {
+  public void asyncLoadData(RequestBatchLoadDto body)
+      throws InternalServerErrorException, NotFoundException {
 
     String tableName = body.getTableName();
 
     if (!dynamoDbRepository.isTableExists(tableName)) {
-      throw new Exception(String.format("Table %s doesn't exists.", body.getTableName()));
+      throw new NotFoundException(String.format("Table %s doesn't exists.", body.getTableName()));
     }
 
     List<Map<String, Map<String, Object>>> items = body.getContent().getItems();
@@ -94,19 +97,29 @@ public class DynamoDbServiceImpl implements DynamoDbService {
   }
 
   private void waitingForCompletableFuturesPendingExecution(
-      List<CompletableFuture<BatchWriteItemResult>> futures) throws Exception {
-    List<CompletableFuture<BatchWriteItemResult>> futuresNotExecuted =
-        futures.stream()
-            .filter(
-                future ->
-                    !future.isDone() && !future.isCompletedExceptionally() && !future.isCancelled())
-            .collect(Collectors.toList());
+      List<CompletableFuture<BatchWriteItemResult>> futures) throws InternalServerErrorException {
 
-    if (!futuresNotExecuted.isEmpty()) {
-      CompletableFuture.allOf(futuresNotExecuted.toArray(CompletableFuture[]::new)).join();
+    try {
+      List<CompletableFuture<BatchWriteItemResult>> futuresNotExecuted =
+          futures.stream()
+              .filter(
+                  future ->
+                      !future.isDone()
+                          && !future.isCompletedExceptionally()
+                          && !future.isCancelled())
+              .collect(Collectors.toList());
+
+      if (!futuresNotExecuted.isEmpty()) {
+        CompletableFuture.allOf(futuresNotExecuted.toArray(CompletableFuture[]::new)).join();
+      }
+
+      Thread.sleep(500);
+    } catch (InterruptedException ex) {
+      Thread.currentThread().interrupt();
+
+      log.error(ex.getStackTrace());
+
+      throw new InternalServerErrorException(ex.getMessage());
     }
-
-    Thread.sleep(500);
   }
-
 }

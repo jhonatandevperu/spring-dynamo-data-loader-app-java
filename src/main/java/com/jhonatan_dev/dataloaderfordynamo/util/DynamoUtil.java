@@ -47,15 +47,15 @@ public class DynamoUtil {
 
     Map<String, AttributeValue> putItem = new HashMap<>();
 
-    item.forEach((attributeName, value1) -> {
+    item.forEach(
+        (attributeName, value1) -> {
+          AtomicReference<AttributeValue> attributeValue =
+              new AtomicReference<>(new AttributeValue());
 
-        AtomicReference<AttributeValue> attributeValue =
-                new AtomicReference<>(new AttributeValue());
+          value1.forEach((key, value) -> attributeValue.set(ItemUtils.toAttributeValue(value)));
 
-        value1.forEach((key, value) -> attributeValue.set(ItemUtils.toAttributeValue(value)));
-
-        putItem.put(attributeName, attributeValue.get());
-    });
+          putItem.put(attributeName, attributeValue.get());
+        });
 
     return putItem;
   }

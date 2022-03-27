@@ -4,6 +4,7 @@ import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.model.BatchWriteItemRequest;
 import com.amazonaws.services.dynamodbv2.model.BatchWriteItemResult;
 import com.amazonaws.services.dynamodbv2.model.DescribeTableResult;
+import com.jhonatan_dev.dataloaderfordynamo.exceptions.InternalServerErrorException;
 import com.jhonatan_dev.dataloaderfordynamo.repository.DynamoDbRepository;
 import com.jhonatan_dev.dataloaderfordynamo.util.DynamoUtil;
 import java.util.List;
@@ -25,20 +26,29 @@ public class DynamoDbRepositoryImpl implements DynamoDbRepository {
 
   @Override
   public void loadData(String tableName, List<Map<String, Map<String, Object>>> items)
-      throws Exception {
+      throws InternalServerErrorException {
     log.info("Start -> dynamoDbRepository.loadData");
 
-    log.info("tableName: " + tableName);
+    try {
+      BatchWriteItemRequest batchWriteItemRequest =
+          DynamoUtil.getBatchWriteItemResult(tableName, items);
 
-    log.info("items size: " + items.size());
+      BatchWriteItemResult batchWriteItemResult =
+          amazonDynamoDB.batchWriteItem(batchWriteItemRequest);
 
-    BatchWriteItemRequest batchWriteItemRequest =
-        DynamoUtil.getBatchWriteItemResult(tableName, items);
+      log.info(
+          "batchWriteItemResult.unprocessedItems size : {}",
+          batchWriteItemResult.getUnprocessedItems().size());
 
-    BatchWriteItemResult batchWriteItemResult =
-        amazonDynamoDB.batchWriteItem(batchWriteItemRequest);
+      log.info(
+          "batchWriteItemResult.unprocessedItems: {}", batchWriteItemResult.getUnprocessedItems());
 
-    log.info("batchWriteItemResult: " + batchWriteItemResult);
+    } catch (Exception ex) {
+
+      log.error(ex.getStackTrace());
+
+      throw new InternalServerErrorException(ex.getMessage());
+    }
 
     log.info("End -> dynamoDbRepository.loadData");
   }
@@ -54,7 +64,7 @@ public class DynamoDbRepositoryImpl implements DynamoDbRepository {
 
       existsTable = describeTableResult.getTable().getTableName().equals(tableName);
     } catch (Exception ex) {
-      log.error("dynamoDbRepository.isTableExists, error: {}", ex.getMessage());
+      log.error(ex.getStackTrace());
     }
 
     log.info("End -> dynamoDbRepository.isTableExists");
