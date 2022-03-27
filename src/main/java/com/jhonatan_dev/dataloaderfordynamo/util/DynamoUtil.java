@@ -5,6 +5,7 @@ import com.amazonaws.services.dynamodbv2.model.*;
 import java.text.NumberFormat;
 import java.text.ParseException;
 import java.util.*;
+import java.util.stream.Collectors;
 import lombok.experimental.UtilityClass;
 import lombok.extern.log4j.Log4j2;
 
@@ -118,7 +119,7 @@ public class DynamoUtil {
       for (Object value : values) {
         if (value instanceof String) {
           try {
-            byte[] byteArray = Base64.getDecoder().decode((String) attributeGenericValue);
+            byte[] byteArray = Base64.getDecoder().decode((String) value);
             byteArrays.add(byteArray);
           } catch (IllegalArgumentException ex) {
             log.error(
@@ -136,10 +137,9 @@ public class DynamoUtil {
   }
 
   private static AttributeValue getAttributeValueBOOL(Object attributeGenericValue) {
-    if (attributeGenericValue instanceof Boolean) {
-      return new AttributeValue().withBOOL((Boolean) attributeGenericValue);
-    }
-    return null;
+    return attributeGenericValue instanceof Boolean
+        ? new AttributeValue().withBOOL((Boolean) attributeGenericValue)
+        : null;
   }
 
   private static AttributeValue getAttributeValueN(Object attributeGenericValue) {
@@ -189,34 +189,34 @@ public class DynamoUtil {
   }
 
   private static AttributeValue getAttributeValueNULL(Object attributeGenericValue) {
-    if (attributeGenericValue instanceof Boolean) {
-      return new AttributeValue().withNULL((Boolean) attributeGenericValue);
-    }
-    return null;
+    return attributeGenericValue instanceof Boolean
+        ? new AttributeValue().withNULL((Boolean) attributeGenericValue)
+        : null;
   }
 
   private static AttributeValue getAttributeValueS(Object attributeGenericValue) {
-    if (attributeGenericValue instanceof String) {
-      return new AttributeValue().withS((String) attributeGenericValue);
-    }
-    return null;
+    return attributeGenericValue instanceof String
+        ? new AttributeValue().withS((String) attributeGenericValue)
+        : null;
   }
 
   @SuppressWarnings("unchecked")
   private static AttributeValue getAttributeValueSS(Object attributeGenericValue) {
     if (attributeGenericValue instanceof List) {
-      List<String> strings = new ArrayList<>();
-
       List<Object> values = (List<Object>) attributeGenericValue;
 
-      for (Object value : values) {
-        if (value instanceof String) {
-          strings.add((String) value);
-        }
-      }
+      List<String> strings =
+          values.stream()
+              .filter(String.class::isInstance)
+              .map(String.class::cast)
+              .collect(Collectors.toList());
 
       if (!strings.isEmpty()) {
-        return ItemUtils.toAttributeValue(strings);
+        return new AttributeValue()
+            .withL(
+                strings.stream()
+                    .map(str -> new AttributeValue().withS(str))
+                    .collect(Collectors.toList()));
       }
     }
     return null;
