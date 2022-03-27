@@ -45,7 +45,7 @@ class ApiVersion1ControllerTest {
     mvc.perform(
             post("/api/v1/batchload")
                 .content(objectMapper.writeValueAsBytes(requestBatchLoadDto))
-                .contentType(MediaType.APPLICATION_JSON))
+                .contentType(MediaType.APPLICATION_JSON_VALUE))
         .andExpect(status().isOk());
   }
 }
