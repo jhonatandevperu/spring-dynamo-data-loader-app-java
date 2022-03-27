@@ -2,6 +2,7 @@ package com.jhonatan_dev.dataloaderfordynamo.util;
 
 import com.amazonaws.services.dynamodbv2.document.ItemUtils;
 import com.amazonaws.services.dynamodbv2.model.*;
+import java.nio.ByteBuffer;
 import java.text.NumberFormat;
 import java.text.ParseException;
 import java.util.*;
@@ -74,6 +75,13 @@ public class DynamoUtil {
 
   public static AttributeValue getAttributeValue(
       String attributeType, Object attributeGenericValue) {
+
+    Object attributeValue = getObjectAttributeValue(attributeType, attributeGenericValue);
+
+    return attributeValue != null ? ItemUtils.toAttributeValue(attributeValue) : null;
+  }
+
+  public static Object getObjectAttributeValue(String attributeType, Object attributeGenericValue) {
     switch (attributeType) {
       case "B":
         return getAttributeValueB(attributeGenericValue);
@@ -91,18 +99,28 @@ public class DynamoUtil {
         return getAttributeValueS(attributeGenericValue);
       case "SS":
         return getAttributeValueSS(attributeGenericValue);
+      case "L":
+        return getAttributeValueL(attributeGenericValue);
       default:
         return null;
     }
   }
 
-  private static AttributeValue getAttributeValueB(Object attributeGenericValue) {
+  private static ByteBuffer getAttributeValueB(Object attributeGenericValue) {
     if (attributeGenericValue instanceof String) {
       try {
-        byte[] byteArray = Base64.getDecoder().decode((String) attributeGenericValue);
-        return ItemUtils.toAttributeValue(byteArray);
+        byte[] bytes = Base64.getDecoder().decode((String) attributeGenericValue);
+
+        ByteBuffer byteBuffer = ByteBuffer.allocate(bytes.length);
+        byteBuffer.put(bytes, 0, bytes.length);
+        byteBuffer.position(0);
+
+        return byteBuffer;
       } catch (IllegalArgumentException ex) {
-        log.error("dynamoUtil.getAttributeValueB, parsing 'B' type, error: {}", ex.getMessage());
+        log.error(
+            "dynamoUtil.getNAttributeValue, parsing 'B' type, value '{}', error: {}",
+            attributeGenericValue,
+            ex.getMessage());
         ex.printStackTrace();
       }
     }
@@ -110,116 +128,106 @@ public class DynamoUtil {
   }
 
   @SuppressWarnings("unchecked")
-  private static AttributeValue getAttributeValueBS(Object attributeGenericValue) {
+  private static List<ByteBuffer> getAttributeValueBS(Object attributeGenericValue) {
+    List<ByteBuffer> byteBuffers = new ArrayList<>();
     if (attributeGenericValue instanceof List) {
-      List<byte[]> byteArrays = new ArrayList<>();
+      List<Object> values = (List<Object>) attributeGenericValue;
 
+      byteBuffers =
+          values.stream()
+              .map(DynamoUtil::getAttributeValueB)
+              .filter(Objects::nonNull)
+              .collect(Collectors.toList());
+    }
+    return !byteBuffers.isEmpty() ? byteBuffers : null;
+  }
+
+  @SuppressWarnings("unchecked")
+  private static List<Object> getAttributeValueL(Object attributeGenericValue) {
+    List<Object> objects = new ArrayList<>();
+    if (attributeGenericValue instanceof List) {
       List<Object> values = (List<Object>) attributeGenericValue;
 
       for (Object value : values) {
-        if (value instanceof String) {
-          try {
-            byte[] byteArray = Base64.getDecoder().decode((String) value);
-            byteArrays.add(byteArray);
-          } catch (IllegalArgumentException ex) {
-            log.error(
-                "dynamoUtil.getAttributeValueBS, parsing 'BS' type, error: {}", ex.getMessage());
-            ex.printStackTrace();
+        if (value instanceof Map) {
+          Map<String, Object> subItem = (Map<String, Object>) value;
+
+          Set<Map.Entry<String, Object>> subItemData = subItem.entrySet();
+
+          for (Map.Entry<String, Object> subItemType : subItemData) {
+            Object object = getObjectAttributeValue(subItemType.getKey(), subItemType.getValue());
+
+            if (object != null) {
+              objects.add(object);
+            }
           }
         }
       }
-
-      if (!byteArrays.isEmpty()) {
-        return ItemUtils.toAttributeValue(byteArrays);
-      }
     }
-    return null;
+    return !objects.isEmpty() ? objects : null;
   }
 
-  private static AttributeValue getAttributeValueBOOL(Object attributeGenericValue) {
-    return attributeGenericValue instanceof Boolean
-        ? new AttributeValue().withBOOL((Boolean) attributeGenericValue)
-        : null;
+  private static Boolean getAttributeValueBOOL(Object attributeGenericValue) {
+    return attributeGenericValue instanceof Boolean ? (Boolean) attributeGenericValue : null;
   }
 
-  private static AttributeValue getAttributeValueN(Object attributeGenericValue) {
+  private static Number getAttributeValueN(Object attributeGenericValue) {
     if (attributeGenericValue instanceof String) {
       try {
-        Number number = NumberFormat.getInstance().parse((String) attributeGenericValue);
-
-        return ItemUtils.toAttributeValue(number);
+        return NumberFormat.getInstance().parse((String) attributeGenericValue);
       } catch (ParseException ex) {
-        log.error("dynamoUtil.getNAttributeValue, parsing 'N' type, error: {}", ex.getMessage());
+        log.error(
+            "dynamoUtil.getNAttributeValue, parsing 'N' type, value '{}', error: {}",
+            attributeGenericValue,
+            ex.getMessage());
         ex.printStackTrace();
       }
     } else if (attributeGenericValue instanceof Number) {
-      return ItemUtils.toAttributeValue(attributeGenericValue);
+      return (Number) attributeGenericValue;
     }
     return null;
   }
 
   @SuppressWarnings("unchecked")
-  private static AttributeValue getAttributeValueNS(Object attributeGenericValue) {
-    if (attributeGenericValue instanceof List) {
-      List<Number> numbers = new ArrayList<>();
-
-      List<Object> values = (List<Object>) attributeGenericValue;
-
-      for (Object value : values) {
-        if (value instanceof String) {
-          try {
-            Number number = NumberFormat.getInstance().parse((String) value);
-
-            numbers.add(number);
-          } catch (ParseException ex) {
-            log.error(
-                "dynamoUtil.getNSAttributeValue, parsing 'NS' type, error: {}", ex.getMessage());
-            ex.printStackTrace();
-          }
-        } else if (attributeGenericValue instanceof Number) {
-          numbers.add((Number) attributeGenericValue);
-        }
-      }
-
-      if (!numbers.isEmpty()) {
-        return ItemUtils.toAttributeValue(numbers);
-      }
-    }
-    return null;
-  }
-
-  private static AttributeValue getAttributeValueNULL(Object attributeGenericValue) {
-    return attributeGenericValue instanceof Boolean
-        ? new AttributeValue().withNULL((Boolean) attributeGenericValue)
-        : null;
-  }
-
-  private static AttributeValue getAttributeValueS(Object attributeGenericValue) {
-    return attributeGenericValue instanceof String
-        ? new AttributeValue().withS((String) attributeGenericValue)
-        : null;
-  }
-
-  @SuppressWarnings("unchecked")
-  private static AttributeValue getAttributeValueSS(Object attributeGenericValue) {
+  private static List<Number> getAttributeValueNS(Object attributeGenericValue) {
+    List<Number> numbers = new ArrayList<>();
     if (attributeGenericValue instanceof List) {
       List<Object> values = (List<Object>) attributeGenericValue;
 
-      List<String> strings =
+      numbers =
           values.stream()
-              .filter(String.class::isInstance)
-              .map(String.class::cast)
+              .map(DynamoUtil::getAttributeValueN)
+              .filter(Objects::nonNull)
               .collect(Collectors.toList());
-
-      if (!strings.isEmpty()) {
-        return new AttributeValue()
-            .withL(
-                strings.stream()
-                    .map(str -> new AttributeValue().withS(str))
-                    .collect(Collectors.toList()));
-      }
     }
-    return null;
+    return !numbers.isEmpty() ? numbers : null;
+  }
+
+  private static Object getAttributeValueNULL(Object attributeGenericValue) {
+    return attributeGenericValue instanceof Boolean && Boolean.TRUE.equals(attributeGenericValue)
+        ? null
+        : attributeGenericValue;
+  }
+
+  private static String getAttributeValueS(Object attributeGenericValue) {
+    return attributeGenericValue instanceof String ? (String) attributeGenericValue : null;
+  }
+
+  @SuppressWarnings("unchecked")
+  private static List<String> getAttributeValueSS(Object attributeGenericValue) {
+    List<String> strings = new ArrayList<>();
+
+    if (attributeGenericValue instanceof List) {
+      List<Object> values = (List<Object>) attributeGenericValue;
+
+      strings =
+          values.stream()
+              .map(DynamoUtil::getAttributeValueS)
+              .filter(Objects::nonNull)
+              .collect(Collectors.toList());
+    }
+
+    return !strings.isEmpty() ? strings : null;
   }
 
   public static int getOperationTimes(int itemsSize, int itemsSplitSize) {
