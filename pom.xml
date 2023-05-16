@@ -68,13 +68,8 @@
             <id>website</id>
             <url>https://github.com/jhonatandevperu/spring-dynamo-data-loader-app-java</url>
         </site>
-        <repository>
-            <id>github-release</id>
-            <name>GitHub Release Packages</name>
-            <url>https://maven.pkg.github.com/jhonatandevperu/spring-dynamo-data-loader-app-java</url>
-        </repository>
         <snapshotRepository>
-            <id>github-snapshot</id>
+            <id>github</id>
             <name>GitHub Snapshot Packages</name>
             <url>https://maven.pkg.github.com/jhonatandevperu/spring-dynamo-data-loader-app-java</url>
         </snapshotRepository>
