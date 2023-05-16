@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @Log4j2
 @RestController
-@RequestMapping("/api/v1")
+@RequestMapping("/v1")
 public class ApiVersion1Controller {
 
   private final DynamoDbService dynamoDbService;
