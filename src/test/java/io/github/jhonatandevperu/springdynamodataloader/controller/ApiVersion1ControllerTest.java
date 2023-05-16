@@ -43,7 +43,7 @@ class ApiVersion1ControllerTest {
     doNothing().when(dynamoDbService).asyncLoadData(requestBatchLoadDto);
 
     mvc.perform(
-            post("/api/v1/batchload")
+            post("/v1/batchload")
                 .content(objectMapper.writeValueAsBytes(requestBatchLoadDto))
                 .contentType(MediaType.APPLICATION_JSON_VALUE))
         .andExpect(status().isOk());
