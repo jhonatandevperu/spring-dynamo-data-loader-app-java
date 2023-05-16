@@ -107,7 +107,7 @@ public class DynamoDbServiceImpl implements DynamoDbService {
                       !future.isDone()
                           && !future.isCompletedExceptionally()
                           && !future.isCancelled())
-              .collect(Collectors.toList());
+              .toList();
 
       if (!futuresNotExecuted.isEmpty()) {
         CompletableFuture.allOf(futuresNotExecuted.toArray(CompletableFuture[]::new)).join();

@@ -63,16 +63,17 @@ public class AwsConfig {
   }
 
   protected AWSCredentialsProvider amazonAWSCredentialsProvider() {
-    if (awsProperties.getAccessKey() != null && awsProperties.getSecretKey() != null) {
+    if (awsProperties.getAccessKeyId() != null && awsProperties.getSecretAccessKeyId() != null) {
 
       log.info(
           "AWSCredentialsProvider access/secret keys: "
-              + awsProperties.getAccessKey()
+              + awsProperties.getAccessKeyId()
               + " , "
-              + awsProperties.getSecretKey());
+              + awsProperties.getSecretAccessKeyId());
 
       return new AWSStaticCredentialsProvider(
-          new BasicAWSCredentials(awsProperties.getAccessKey(), awsProperties.getSecretKey()));
+          new BasicAWSCredentials(
+              awsProperties.getAccessKeyId(), awsProperties.getSecretAccessKeyId()));
     }
 
     if (awsProperties.getRole() != null && awsProperties.getRole().getRoleArn() != null) {

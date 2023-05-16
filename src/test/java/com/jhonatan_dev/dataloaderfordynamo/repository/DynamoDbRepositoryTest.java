@@ -43,6 +43,8 @@ class DynamoDbRepositoryTest {
     when(amazonDynamoDB.batchWriteItem(batchWriteItemRequest)).thenReturn(batchWriteItemResult);
 
     dynamoDbRepository.loadData(tableName, items);
+
+    Mockito.verify(amazonDynamoDB).batchWriteItem(batchWriteItemRequest);
   }
 
   @Test

@@ -1,6 +1,7 @@
 package com.jhonatan_dev.dataloaderfordynamo.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import java.io.Serial;
 import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
@@ -17,7 +18,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class RequestBatchLoadContentDto implements Serializable {
 
-  private static final long serialVersionUID = 7530898663271126982L;
+  @Serial private static final long serialVersionUID = 7530898663271126982L;
 
   @NotNull
   @NotEmpty

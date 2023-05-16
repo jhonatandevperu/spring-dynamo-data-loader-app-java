@@ -1,5 +1,6 @@
 package com.jhonatan_dev.dataloaderfordynamo;
 
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
@@ -7,5 +8,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 class DataloaderfordynamoApplicationTests {
 
   @Test
-  void contextLoads() {}
+  void contextLoads() {
+    Assertions.assertNotNull(this);
+  }
 }

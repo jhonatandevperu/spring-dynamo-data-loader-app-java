@@ -6,12 +6,12 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 
 @Data
 @NoArgsConstructor
-@ConfigurationProperties(prefix = "amazon")
+@ConfigurationProperties(prefix = "aws")
 public class AwsProperties {
 
-  private String accessKey;
+  private String accessKeyId;
 
-  private String secretKey;
+  private String secretAccessKeyId;
 
   private String endpoint;
 

@@ -6,7 +6,6 @@ import java.nio.ByteBuffer;
 import java.text.NumberFormat;
 import java.text.ParseException;
 import java.util.*;
-import java.util.stream.Collectors;
 import lombok.experimental.UtilityClass;
 import lombok.extern.log4j.Log4j2;
 
@@ -45,12 +44,6 @@ public class DynamoUtil {
     return new WriteRequest(putRequest);
   }
 
-  public static PutItemRequest getPutItemRequest(
-      String tableName, Map<String, Map<String, Object>> item) {
-
-    return new PutItemRequest(tableName, getPutItem(item));
-  }
-
   public static Map<String, AttributeValue> getPutItem(Map<String, Map<String, Object>> item) {
 
     Map<String, AttributeValue> putItem = new HashMap<>();
@@ -82,34 +75,24 @@ public class DynamoUtil {
   }
 
   public static Object getObjectAttributeValue(String attributeType, Object attributeGenericValue) {
-    switch (attributeType) {
-      case "B":
-        return getAttributeValueB(attributeGenericValue);
-      case "BS":
-        return getAttributeValueBS(attributeGenericValue);
-      case "BOOL":
-        return getAttributeValueBOOL(attributeGenericValue);
-      case "N":
-        return getAttributeValueN(attributeGenericValue);
-      case "NS":
-        return getAttributeValueNS(attributeGenericValue);
-      case "NULL":
-        return getAttributeValueNULL(attributeGenericValue);
-      case "S":
-        return getAttributeValueS(attributeGenericValue);
-      case "SS":
-        return getAttributeValueSS(attributeGenericValue);
-      case "L":
-        return getAttributeValueL(attributeGenericValue);
-      default:
-        return null;
-    }
+    return switch (attributeType) {
+      case "B" -> getAttributeValueB(attributeGenericValue);
+      case "BS" -> getAttributeValueBS(attributeGenericValue);
+      case "BOOL" -> getAttributeValueBOOL(attributeGenericValue);
+      case "N" -> getAttributeValueN(attributeGenericValue);
+      case "NS" -> getAttributeValueNS(attributeGenericValue);
+      case "NULL" -> getAttributeValueNULL(attributeGenericValue);
+      case "S" -> getAttributeValueS(attributeGenericValue);
+      case "SS" -> getAttributeValueSS(attributeGenericValue);
+      case "L" -> getAttributeValueL(attributeGenericValue);
+      default -> null;
+    };
   }
 
   private static ByteBuffer getAttributeValueB(Object attributeGenericValue) {
-    if (attributeGenericValue instanceof String) {
+    if (attributeGenericValue instanceof String strAttributeGenericValue) {
       try {
-        byte[] bytes = Base64.getDecoder().decode((String) attributeGenericValue);
+        byte[] bytes = Base64.getDecoder().decode(strAttributeGenericValue);
 
         ByteBuffer byteBuffer = ByteBuffer.allocate(bytes.length);
         byteBuffer.put(bytes, 0, bytes.length);
@@ -119,7 +102,7 @@ public class DynamoUtil {
       } catch (IllegalArgumentException ex) {
         log.error(
             "dynamoUtil.getNAttributeValue, parsing 'B' type, value '{}', error: {}",
-            attributeGenericValue,
+            strAttributeGenericValue,
             ex.getMessage());
         ex.printStackTrace();
       }
@@ -127,17 +110,14 @@ public class DynamoUtil {
     return null;
   }
 
-  @SuppressWarnings("unchecked")
   private static List<ByteBuffer> getAttributeValueBS(Object attributeGenericValue) {
     List<ByteBuffer> byteBuffers = new ArrayList<>();
-    if (attributeGenericValue instanceof List) {
-      List<Object> values = (List<Object>) attributeGenericValue;
-
-      byteBuffers =
-          values.stream()
+    if (attributeGenericValue instanceof List<?> listAttributeGenericValue) {
+      byteBuffers.addAll(
+          listAttributeGenericValue.stream()
               .map(DynamoUtil::getAttributeValueB)
               .filter(Objects::nonNull)
-              .collect(Collectors.toList());
+              .toList());
     }
     return !byteBuffers.isEmpty() ? byteBuffers : null;
   }
@@ -145,14 +125,10 @@ public class DynamoUtil {
   @SuppressWarnings("unchecked")
   private static List<Object> getAttributeValueL(Object attributeGenericValue) {
     List<Object> objects = new ArrayList<>();
-    if (attributeGenericValue instanceof List) {
-      List<Object> values = (List<Object>) attributeGenericValue;
-
-      for (Object value : values) {
-        if (value instanceof Map) {
-          Map<String, Object> subItem = (Map<String, Object>) value;
-
-          Set<Map.Entry<String, Object>> subItemData = subItem.entrySet();
+    if (attributeGenericValue instanceof List<?> listAttributeGenericValue) {
+      for (Object value : listAttributeGenericValue) {
+        if (value instanceof Map<?, ?> mapValue) {
+          Set<Map.Entry<String, Object>> subItemData = ((Map<String, Object>) mapValue).entrySet();
 
           for (Map.Entry<String, Object> subItemType : subItemData) {
             Object object = getObjectAttributeValue(subItemType.getKey(), subItemType.getValue());
@@ -168,69 +144,62 @@ public class DynamoUtil {
   }
 
   private static Boolean getAttributeValueBOOL(Object attributeGenericValue) {
-    return attributeGenericValue instanceof Boolean ? (Boolean) attributeGenericValue : null;
+    return attributeGenericValue instanceof Boolean boolAttributeGenericValue
+        ? boolAttributeGenericValue
+        : null;
   }
 
   private static Number getAttributeValueN(Object attributeGenericValue) {
-    if (attributeGenericValue instanceof String) {
+    if (attributeGenericValue instanceof String strAttributeGenericValue) {
       try {
-        return NumberFormat.getInstance().parse((String) attributeGenericValue);
+        return NumberFormat.getInstance().parse(strAttributeGenericValue);
       } catch (ParseException ex) {
         log.error(
             "dynamoUtil.getNAttributeValue, parsing 'N' type, value '{}', error: {}",
-            attributeGenericValue,
+            strAttributeGenericValue,
             ex.getMessage());
         ex.printStackTrace();
       }
-    } else if (attributeGenericValue instanceof Number) {
-      return (Number) attributeGenericValue;
+    } else if (attributeGenericValue instanceof Number numberAttributeGenericValue) {
+      return numberAttributeGenericValue;
     }
     return null;
   }
 
-  @SuppressWarnings("unchecked")
   private static List<Number> getAttributeValueNS(Object attributeGenericValue) {
     List<Number> numbers = new ArrayList<>();
-    if (attributeGenericValue instanceof List) {
-      List<Object> values = (List<Object>) attributeGenericValue;
-
-      numbers =
-          values.stream()
+    if (attributeGenericValue instanceof List<?> listAttributeGenericValue) {
+      numbers.addAll(
+          listAttributeGenericValue.stream()
               .map(DynamoUtil::getAttributeValueN)
               .filter(Objects::nonNull)
-              .collect(Collectors.toList());
+              .toList());
     }
     return !numbers.isEmpty() ? numbers : null;
   }
 
   private static Object getAttributeValueNULL(Object attributeGenericValue) {
-    return attributeGenericValue instanceof Boolean && Boolean.TRUE.equals(attributeGenericValue)
+    return attributeGenericValue instanceof Boolean boolAttributeGenericValue
+            && Boolean.TRUE.equals(boolAttributeGenericValue)
         ? null
         : attributeGenericValue;
   }
 
   private static String getAttributeValueS(Object attributeGenericValue) {
-    return attributeGenericValue instanceof String ? (String) attributeGenericValue : null;
+    return attributeGenericValue instanceof String castedAttributeGenericValue
+        ? castedAttributeGenericValue
+        : null;
   }
 
-  @SuppressWarnings("unchecked")
   private static List<String> getAttributeValueSS(Object attributeGenericValue) {
     List<String> strings = new ArrayList<>();
-
-    if (attributeGenericValue instanceof List) {
-      List<Object> values = (List<Object>) attributeGenericValue;
-
-      strings =
-          values.stream()
+    if (attributeGenericValue instanceof List<?> listAttributeGenericValue) {
+      strings.addAll(
+          listAttributeGenericValue.stream()
               .map(DynamoUtil::getAttributeValueS)
               .filter(Objects::nonNull)
-              .collect(Collectors.toList());
+              .toList());
     }
-
     return !strings.isEmpty() ? strings : null;
-  }
-
-  public static int getOperationTimes(int itemsSize, int itemsSplitSize) {
-    return (int) Math.ceil(itemsSize / (float) itemsSplitSize);
   }
 }
