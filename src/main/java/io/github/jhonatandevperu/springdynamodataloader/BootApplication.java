@@ -7,10 +7,10 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @Log4j2
 @SpringBootApplication
-public class DataloaderfordynamoApplication implements CommandLineRunner {
+public class BootApplication implements CommandLineRunner {
 
   public static void main(String[] args) {
-    SpringApplication.run(DataloaderfordynamoApplication.class, args);
+    SpringApplication.run(BootApplication.class, args);
   }
 
   @Override
