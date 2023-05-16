@@ -101,4 +101,4 @@ Application was made using [AWS SDK v1.12.x for Java](https://github.com/aws/aws
 
 # Author
 
-- Jhonatan David Castillo Salvador - [@jhonatan-dev](https://github.com/jhonatan-dev)
+- Jhonatan David Castillo Salvador - [@jhonatandevperu](https://github.com/jhonatandevperu)
