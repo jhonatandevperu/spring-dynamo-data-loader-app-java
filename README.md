@@ -1,6 +1,6 @@
 # Description
 
-Data Loader for DynamoDB, is a small Spring boot application to write per batch many records to any DynamoDB table.
+A small Java/Spring Boot application to write per batch many records to any DynamoDB table.
 Application was made using [AWS SDK v1.12.x for Java](https://github.com/aws/aws-sdk-java).
 
 # Environment variables
